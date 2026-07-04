@@ -25,8 +25,8 @@ const car = ref<HTMLElement | null>(null);
 let rafId = 0;
 let pos = 0;                       // position de défilement (float)
 let tween: number | null = null;   // cible des flèches
-let hovering = false;
-let touching = false;
+const hovering = ref(false);
+const touching = ref(false);
 const SPEED = 0.5, SPEED_HOVER = 0.12;
 
 function cardWidth(): number {
@@ -37,7 +37,7 @@ function cardWidth(): number {
 function carTick() {
   const el = car.value;
   if (el) {
-    if (touching) {
+    if (touching.value) {
       pos = el.scrollLeft; // l'utilisateur fait défiler au doigt : on suit
     } else {
       let moved = false;
@@ -47,7 +47,7 @@ function carTick() {
         if (Math.abs(d) < 0.8) { pos = tween; tween = null; }
         moved = true;
       } else if (!REDUCE) {
-        pos += hovering ? SPEED_HOVER : SPEED;
+        pos += hovering.value ? SPEED_HOVER : SPEED;
         moved = true;
       }
       if (moved) {
