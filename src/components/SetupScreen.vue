@@ -131,6 +131,15 @@ function setTargetCustom(e: Event) {
   if (v >= 50 && v <= 99999) settings.target = v;
 }
 function timerOn() { if (!settings.timer) settings.timer = 10; }
+const showAll = ref(false);   // grille de tous les classements
+const showRules = ref(false); // règles repliées derrière « Personnaliser »
+const ruleSummary = computed(() => {
+  const m = settings.mode === "rounds"
+    ? `${settings.rounds} manches` : `course à ${settings.target} pts`;
+  const t = settings.timer ? `chrono ${settings.timer} s` : "sans chrono";
+  const s2 = settings.start === "alt" ? "premier joueur alterné" : "premier joueur aléatoire";
+  return `${m} · ${t} · ${s2}`;
+});
 function setTimer(e: Event) {
   settings.timer = parseInt((e.target as HTMLInputElement).value, 10);
 }
@@ -142,8 +151,7 @@ function setTimer(e: Event) {
 
     <div class="actLbl">Choisis le classement</div>
     <div class="field" style="margin-bottom:0">
-      <div class="carWrap">
-        <button class="cnav prev" type="button" aria-label="Classements précédents" @click="carNav(-1)">‹</button>
+      <div v-if="!showAll" class="carWrap">
         <div class="carousel" :class="{ grabbing: dragging }"
              @pointerenter="hovering = true" @pointerleave="hovering = false"
              @pointerdown="dragDown" @pointermove="dragMove"
@@ -162,6 +170,25 @@ function setTimer(e: Event) {
           </div>
         </div>
         <button class="cnav next" type="button" aria-label="Classements suivants" @click="carNav(1)">›</button>
+      </div>
+
+      <!-- vue « voir tout » : tous les classements, sans défilement -->
+      <div v-else class="lgrid">
+        <div v-for="e in list.catalog" :key="e.slug" class="lcard"
+             :class="{ sel: e.slug === list.selectedSlug }" role="button" tabindex="0"
+             @click="list.selectList(e)" @keydown.enter="list.selectList(e)">
+          <img v-if="e.cover" :src="e.cover" alt="" loading="lazy">
+          <div class="lgrad"></div>
+          <div class="linfo">
+            <div class="lt">{{ e.title }}</div>
+            <div class="lc">{{ e.count }} films</div>
+          </div>
+        </div>
+      </div>
+      <div class="seeAllRow">
+        <button class="linkBtn" @click="showAll = !showAll">
+          {{ showAll ? "revenir au défilement" : "voir tout" }}
+        </button>
       </div>
       <div v-if="list.status && list.status.type !== 'ok'" class="statusWrap">
         <span class="statusChip" :class="list.status.type">
@@ -184,7 +211,13 @@ function setTimer(e: Event) {
     <div v-if="nameErr" class="formErr" style="text-align:center">{{ nameErr }}</div>
 
     <div class="actLbl">Règles</div>
-    <div class="rulesWrap">
+    <div class="ruleSummary">
+      <span class="sum">{{ ruleSummary }}</span>
+      <button class="ghost" @click="showRules = !showRules">
+        {{ showRules ? "Fermer" : "Personnaliser" }}
+      </button>
+    </div>
+    <div v-if="showRules" class="rulesWrap">
       <div class="field">
         <label>Mode de jeu</label>
         <div class="seg">

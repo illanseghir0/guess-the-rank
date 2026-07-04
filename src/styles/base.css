@@ -269,7 +269,7 @@ button.big{font-size:13px;padding:17px 40px;
   background:rgba(10,13,16,.72);border:1px solid var(--line);color:var(--cream);
   font-family:var(--display);font-size:22px;line-height:1;backdrop-filter:blur(4px)}
 .cnav:hover{border-color:rgba(255,255,255,.45);filter:none}
-.cnav.prev{left:8px}.cnav.next{right:8px}
+.cnav.next{right:8px}
 .lcard{position:relative;width:320px;aspect-ratio:16/9;margin-right:18px;border-radius:6px;
   overflow:hidden;cursor:pointer;flex-shrink:0;border:2px solid transparent;
   background:#151a1f;transition:border-color .2s ease,transform .25s ease}
@@ -312,3 +312,19 @@ button.big{font-size:13px;padding:17px 40px;
 /* ---- rangée de lancement (séance) : plus grande, plus d'air ---- */
 .launchRow{margin:48px 0 90px}
 button.xl{font-size:16px;padding:22px 64px;letter-spacing:.22em}
+
+/* ---- marque dans la barre de navigation ---- */
+.brand{font-family:var(--display);font-size:21px;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--cream);cursor:pointer;line-height:1;user-select:none}
+.brand:hover{text-shadow:0 0 24px rgba(242,234,214,.35)}
+
+/* ---- grille « voir tout » des classements ---- */
+.lgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
+.lgrid .lcard{width:auto;margin-right:0}
+.seeAllRow{text-align:center;margin-top:14px}
+
+/* ---- règles repliées : résumé + personnaliser ---- */
+.ruleSummary{display:flex;align-items:center;justify-content:center;gap:20px;flex-wrap:wrap;
+  margin-bottom:6px}
+.ruleSummary .sum{font-family:var(--serif);font-style:italic;color:#b9ae97;font-size:15px}
+.rulesWrap{margin-top:22px}
