@@ -1,26 +1,14 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from "vue";
+import { onMounted, ref } from "vue";
 import { useGameStore } from "../stores/game";
 import { useListStore } from "../stores/list";
 import { useProfileStore } from "../stores/profile";
-
-const props = defineProps<{ bootUrl: string | null }>();
 
 const game = useGameStore();
 const list = useListStore();
 const profile = useProfileStore();
 
-const url = ref("https://letterboxd.com/official/list/letterboxds-top-500-films/");
-const n1 = ref(game.names[0]);
-const n2 = ref(game.names[1]);
-
-/* la dernière liste jouée, restaurée au boot, préremplit le champ */
-watch(() => props.bootUrl, (u) => { if (u) url.value = u; }, { immediate: true });
-
-/* profil connecté = Joueur 1 : prérempli tant que l'utilisateur n'a rien saisi */
-watch(() => profile.username, (u) => {
-  if (u && (n1.value === "Joueur 1" || n1.value === "")) n1.value = u;
-}, { immediate: true });
+const showRules = ref(false);
 
 /* ---- citations pour l'accueil ---- */
 const QUOTES: Array<[string, string]> = [
@@ -45,38 +33,49 @@ onMounted(() => { quote.value = QUOTES[(Math.random() * QUOTES.length) | 0]; });
     <div class="tagline">Deux cinéphiles, une liste culte.<br>
       Un film s'affiche — <b>qui devinera son rang au plus près ?</b></div>
 
-    <div class="panel">
-      <div class="field">
-        <label>Le classement à deviner</label>
-        <div class="urlrow">
-          <input v-model="url" type="text" spellcheck="false"
-                 placeholder="https://letterboxd.com/…/list/…"
-                 @keydown.enter="list.loadList(url)">
-          <button :disabled="list.loading" @click="list.loadList(url)">Charger</button>
-        </div>
-        <div class="srcnote">Colle l'URL de n'importe quelle liste Letterboxd classée
-          (ex. <i>top-250-films-with-the-most-fans</i>).</div>
-        <div class="statusWrap">
-          <span v-if="list.status" class="statusChip" :class="list.status.type">
-            <span class="dotc"></span><span>{{ list.status.msg }}</span>
-          </span>
-        </div>
-      </div>
+    <div v-if="list.ready" class="affiche">À l'affiche : <b>{{ list.listTitle }}</b> · {{ list.films!.length }} films</div>
 
-      <div class="row2" style="margin-top:6px">
-        <div class="field" style="margin-bottom:0">
-          <label>Joueur 1</label>
-          <input id="n1" v-model="n1" type="text" maxlength="18">
-        </div>
-        <div class="field" style="margin-bottom:0">
-          <label>Joueur 2</label>
-          <input id="n2" v-model="n2" type="text" maxlength="18">
-        </div>
+    <nav class="menu">
+      <div class="menuRow" role="button" tabindex="0"
+           @click="game.goSetup()" @keydown.enter="game.goSetup()">
+        <span class="num">01</span>
+        <span class="lbl">Nouvelle séance</span>
+        <span class="arr">→</span>
+        <span class="sub">{{ list.ready ? list.listTitle : "choisis ton classement" }}</span>
       </div>
+      <div v-if="profile.enabled" class="menuRow" role="button" tabindex="0"
+           @click="game.goProfile()" @keydown.enter="game.goProfile()">
+        <span class="num">02</span>
+        <span class="lbl">Carte de membre</span>
+        <span class="arr">→</span>
+        <span class="sub">{{ profile.profile
+          ? `${profile.profile.username} · ${profile.profile.games_won} victoires`
+          : "rejoindre le club" }}</span>
+      </div>
+      <div class="menuRow" role="button" tabindex="0"
+           @click="showRules = !showRules" @keydown.enter="showRules = !showRules">
+        <span class="num">{{ profile.enabled ? "03" : "02" }}</span>
+        <span class="lbl">Comment jouer</span>
+        <span class="arr">{{ showRules ? "↑" : "↓" }}</span>
+        <span class="sub">les règles, en trois actes</span>
+      </div>
+    </nav>
 
-      <div class="btnrow" style="margin-top:28px">
-        <button class="big" :disabled="!list.ready" @click="game.start(n1, n2)">Lancer le duel</button>
-        <button class="ghost" @click="game.goSettings()">Paramètres</button>
+    <div v-if="showRules" class="acts">
+      <div class="act">
+        <div class="roman">Acte I</div>
+        <p>Une affiche apparaît. Le titre, l'année, la main du cinéaste : tout est là —
+          sauf sa place dans le classement.</p>
+      </div>
+      <div class="act">
+        <div class="roman">Acte II</div>
+        <p>Chacun son tour, en secret, on parie sur son rang. L'écran passe de main
+          en main, les certitudes vacillent.</p>
+      </div>
+      <div class="act">
+        <div class="roman">Acte III</div>
+        <p>La révélation. Le pari le plus proche l'emporte, et le générique de fin
+          départage les cinéphiles.</p>
       </div>
     </div>
 

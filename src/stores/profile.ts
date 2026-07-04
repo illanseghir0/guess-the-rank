@@ -15,7 +15,6 @@ export const useProfileStore = defineStore("profile", () => {
   const enabled = !!supabase;
   const session = ref<Session | null>(null);
   const profile = ref<Profile | null>(null);
-  const authOpen = ref(false);
   const busy = ref(false);
 
   const username = computed(() => profile.value?.username ?? null);
@@ -102,7 +101,7 @@ export const useProfileStore = defineStore("profile", () => {
   }
 
   return {
-    enabled, session, profile, username, authOpen, busy,
+    enabled, session, profile, username, busy,
     init, signUp, signIn, signOut, recordGame,
   };
 });

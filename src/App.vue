@@ -5,11 +5,11 @@ import { useListStore } from "./stores/list";
 import { useProfileStore } from "./stores/profile";
 import TheHeader from "./components/TheHeader.vue";
 import HomeScreen from "./components/HomeScreen.vue";
-import SettingsScreen from "./components/SettingsScreen.vue";
+import SetupScreen from "./components/SetupScreen.vue";
+import ProfileScreen from "./components/ProfileScreen.vue";
 import PlayScreen from "./components/PlayScreen.vue";
 import EndScreen from "./components/EndScreen.vue";
 import HandoffOverlay from "./components/HandoffOverlay.vue";
-import AuthModal from "./components/AuthModal.vue";
 
 const game = useGameStore();
 const list = useListStore();
@@ -21,10 +21,9 @@ const backdropSrc = computed(() =>
 const backdropOn = ref(false);
 watch(backdropSrc, () => { backdropOn.value = false; });
 
-const bootUrl = ref<string | null>(null);
-onMounted(async () => {
+onMounted(() => {
   profile.init();
-  bootUrl.value = await list.boot();
+  list.boot();
 });
 </script>
 
@@ -38,8 +37,9 @@ onMounted(async () => {
   <div class="wrap">
     <TheHeader />
 
-    <HomeScreen v-if="game.screen === 'home'" :boot-url="bootUrl" />
-    <SettingsScreen v-else-if="game.screen === 'settings'" />
+    <HomeScreen v-if="game.screen === 'home'" />
+    <SetupScreen v-else-if="game.screen === 'setup'" />
+    <ProfileScreen v-else-if="game.screen === 'profile'" />
     <PlayScreen v-else-if="game.screen === 'play'" />
     <EndScreen v-else />
 
@@ -50,5 +50,4 @@ onMounted(async () => {
   </div>
 
   <HandoffOverlay v-if="game.handoffOpen" />
-  <AuthModal v-if="profile.authOpen" />
 </template>

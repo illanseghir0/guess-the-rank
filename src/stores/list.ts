@@ -15,6 +15,8 @@ export const useListStore = defineStore("list", () => {
   const listKey = ref<string | null>(null); // URL normalisée -> clé de cache
   const status = ref<{ type: StatusType; msg: string } | null>(null);
   const loading = ref(false);
+  /** URL proposée dans le champ de saisie (dernière liste jouée, sinon le Top 500) */
+  const defaultUrl = ref("https://letterboxd.com/official/list/letterboxds-top-500-films/");
 
   const ready = computed(() => !!films.value?.length);
   const maxRank = computed(() =>
@@ -80,6 +82,7 @@ export const useListStore = defineStore("list", () => {
       applyList(out, title, base);
       saveCache();
       localStorage.setItem("duelLast", base);
+      defaultUrl.value = base;
       setStatus("ok", `${title} · ${out.length} films`);
     } catch {
       setStatus("err", "Liste inaccessible (proxys indisponibles ou liste privée) — réessaie dans un instant");
@@ -126,7 +129,7 @@ export const useListStore = defineStore("list", () => {
       }
     } catch { /* pas de films.json servi */ }
     const last = localStorage.getItem("duelLast");
-    if (last && loadFromCache(last)) return last;
+    if (last && loadFromCache(last)) { defaultUrl.value = last; return last; }
     return null;
   }
 
@@ -153,7 +156,7 @@ export const useListStore = defineStore("list", () => {
   }
 
   return {
-    films, listTitle, listKey, status, loading, ready, maxRank, headerTag,
+    films, listTitle, listKey, status, loading, ready, maxRank, headerTag, defaultUrl,
     setStatus, loadList, loadJSONFile, boot, ensureMeta,
   };
 });

@@ -12,7 +12,7 @@ import { useListStore } from "./list";
 import { useSettingsStore } from "./settings";
 import { useProfileStore } from "./profile";
 
-export type Screen = "home" | "settings" | "play" | "end";
+export type Screen = "home" | "setup" | "profile" | "play" | "end";
 
 export interface RevealState {
   stage: 0 | 1 | 2;      // 0: paris posés, 1: vrai rang, 2: verdict
@@ -152,11 +152,12 @@ export const useGameStore = defineStore("game", () => {
   function quit() { endGame(); }
   function rematch() { startGame(); }
   function goHome() { screen.value = "home"; }
-  function goSettings() { screen.value = "settings"; }
+  function goSetup() { screen.value = "setup"; }
+  function goProfile() { screen.value = "profile"; }
 
   return {
     screen, names, score, scoreShown, round, playRounds, deck, guesses, phase, order,
     handoffOpen, reveal, history, statsRecorded, current, currentPlayer,
-    start, nextRound, closeHandoff, submitGuess, quit, rematch, goHome, goSettings,
+    start, nextRound, closeHandoff, submitGuess, quit, rematch, goHome, goSetup, goProfile,
   };
 });

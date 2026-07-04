@@ -26,4 +26,5 @@ export interface Profile {
   games_played: number;
   games_won: number;
   best_gap: number | null;
+  created_at?: string;
 }
