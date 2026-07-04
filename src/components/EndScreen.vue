@@ -9,9 +9,9 @@ const profile = useProfileStore();
 
 const winner = computed(() => {
   const [a, b] = game.score;
-  if (a > b) return { text: `${game.names[0]} l'emporte`, color: "var(--p1)" };
-  if (b > a) return { text: `${game.names[1]} l'emporte`, color: "var(--p2)" };
-  return { text: "Match nul", color: "var(--true)" };
+  if (a > b) return { text: `${game.names[0]} l'emporte`, color: "var(--cream)" };
+  if (b > a) return { text: `${game.names[1]} l'emporte`, color: "var(--cream)" };
+  return { text: "Match nul", color: "var(--muted)" };
 });
 
 interface StatEntry { p: 0 | 1; gap: number; title: string; rank: number }
@@ -33,7 +33,7 @@ onMounted(() => {
   if (!game.history.length || game.score[0] === game.score[1] || REDUCE) return;
   const box = document.createElement("div");
   box.className = "confetti";
-  const colors = ["#00e054", "#40bcf4", "#ff8000", "#e8eef3"];
+  const colors = ["#f2ead6", "#e8eef3", "#b9ae97", "#8b9aa7"];
   for (let i = 0; i < 70; i++) {
     const s = document.createElement("i");
     s.style.left = Math.random() * 100 + "%";
@@ -60,14 +60,14 @@ onMounted(() => {
     <div v-if="stats" class="stats">
       <div class="stat">
         <div class="lbl">Prix de la précision</div>
-        <div class="val" :style="{ color: `var(--p${stats.best.p + 1})` }">
+        <div class="val">
           {{ game.names[stats.best.p] }} — écart {{ stats.best.gap }}
         </div>
         <div class="sub">{{ stats.best.title }} (#{{ stats.best.rank }})</div>
       </div>
       <div class="stat">
         <div class="lbl">Nanar de l'estimation</div>
-        <div class="val" :style="{ color: `var(--p${stats.worst.p + 1})` }">
+        <div class="val">
           {{ game.names[stats.worst.p] }} — écart {{ stats.worst.gap }}
         </div>
         <div class="sub">{{ stats.worst.title }} (#{{ stats.worst.rank }})</div>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, ref, watch } from "vue";
+import { computed, nextTick, onUnmounted, ref, watch } from "vue";
 import { REDUCE } from "../lib/env";
 import { useGameStore } from "../stores/game";
 import { useListStore } from "../stores/list";
@@ -59,6 +59,31 @@ function validate() {
 watch([() => game.handoffOpen, () => game.reveal, () => game.round], async ([h, r]) => {
   if (!h && !r) { await nextTick(); guessInput.value?.focus(); }
 }, { immediate: true });
+
+/* ---- chrono par tour (option) : amorce de pellicule ---- */
+const timeLeft = ref(0);
+let timerInt: number | undefined;
+function stopTurnTimer() { clearInterval(timerInt); timerInt = undefined; }
+function startTurnTimer() {
+  stopTurnTimer();
+  if (!settings.timer) return;
+  timeLeft.value = settings.timer;
+  timerInt = window.setInterval(() => {
+    timeLeft.value--;
+    if (timeLeft.value <= 0) {
+      stopTurnTimer();
+      // temps écoulé : on valide la saisie en cours, sinon pari au hasard
+      const v = parseInt(gval.value, 10);
+      const guess = v >= 1 && v <= list.maxRank ? v : 1 + ((Math.random() * list.maxRank) | 0);
+      gval.value = "";
+      game.submitGuess(guess);
+    }
+  }, 1000);
+}
+watch([() => game.handoffOpen, () => game.reveal, () => game.phase, () => game.round],
+  ([h, r]) => { if (!h && !r) startTurnTimer(); else stopTurnTimer(); },
+  { immediate: true });
+onUnmounted(stopTurnTimer);
 
 const stage = computed(() => game.reveal?.stage ?? -1);
 
@@ -152,6 +177,10 @@ function offTilt() { if (zone.value) zone.value.style.transform = ""; }
       <div v-if="!game.reveal" id="guessBox">
         <div class="prompt">Au tour de <span :class="'who' + (activePlayer + 1)">{{ game.names[activePlayer] }}</span></div>
         <div class="hint">Son rang — entre 1 et {{ list.maxRank }}</div>
+        <div v-if="settings.timer && !game.handoffOpen" class="leader" :class="{ urgent: timeLeft <= 3 }"
+             :style="{ background: `conic-gradient(rgba(242,234,214,.25) ${(timeLeft / settings.timer) * 360}deg, transparent 0deg)` }">
+          <span class="n">{{ timeLeft }}</span>
+        </div>
         <div class="guess" :class="['g' + (activePlayer + 1), { shake: shaking }]">
           <input ref="guessInput" v-model="gval" type="number" :min="1" :max="list.maxRank"
                  step="1" inputmode="numeric" :placeholder="`1–${list.maxRank}`"

@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
+import { REDUCE } from "../lib/env";
 import { useGameStore } from "../stores/game";
 import { useListStore } from "../stores/list";
 import { useProfileStore } from "../stores/profile";
@@ -10,11 +11,31 @@ const list = useListStore();
 const profile = useProfileStore();
 const settings = useSettingsStore();
 
-/* ---- le classement : carrousel du catalogue ---- */
+/* ---- le classement : carrousel auto-défilant + flèches ---- */
 onMounted(() => list.loadCatalog());
 /* contenu doublé pour un défilement en boucle sans couture */
 const loop = computed(() =>
   list.catalog.length ? [...list.catalog, ...list.catalog] : []);
+
+const car = ref<HTMLElement | null>(null);
+let rafId = 0;
+let pausedUntil = 0;
+function carTick() {
+  const el = car.value;
+  if (el && Date.now() > pausedUntil && !REDUCE) {
+    el.scrollLeft += 0.45; // défilement lent
+    const half = el.scrollWidth / 2;
+    if (half > 0 && el.scrollLeft >= half) el.scrollLeft -= half;
+  }
+  rafId = requestAnimationFrame(carTick);
+}
+onMounted(() => { rafId = requestAnimationFrame(carTick); });
+onUnmounted(() => cancelAnimationFrame(rafId));
+function carPause(ms = 1200) { pausedUntil = Date.now() + ms; }
+function carNav(dir: number) {
+  carPause(1600);
+  car.value?.scrollBy({ left: dir * 356, behavior: "smooth" });
+}
 
 /* ---- joueurs : pas de noms préremplis, validation au lancement ---- */
 const DEFAULTS = ["Joueur 1", "Joueur 2"];
@@ -51,6 +72,10 @@ function setTargetCustom(e: Event) {
   const v = parseInt((e.target as HTMLInputElement).value, 10);
   if (v >= 50 && v <= 99999) settings.target = v;
 }
+function timerOn() { if (!settings.timer) settings.timer = 10; }
+function setTimer(e: Event) {
+  settings.timer = parseInt((e.target as HTMLInputElement).value, 10);
+}
 </script>
 
 <template>
@@ -59,19 +84,24 @@ function setTargetCustom(e: Event) {
 
     <div class="actLbl">Choisis le classement</div>
     <div class="field" style="margin-bottom:0">
-      <div class="carousel">
-        <div class="ctrack">
-          <div v-for="(e, i) in loop" :key="i" class="lcard"
-               :class="{ sel: e.slug === list.selectedSlug }" role="button" tabindex="0"
-               @click="list.selectList(e)" @keydown.enter="list.selectList(e)">
-            <img v-if="e.cover" :src="e.cover" alt="" loading="lazy">
-            <div class="lgrad"></div>
-            <div class="linfo">
-              <div class="lt">{{ e.title }}</div>
-              <div class="lc">{{ e.count }} films</div>
+      <div class="carWrap">
+        <button class="cnav prev" type="button" aria-label="Classements précédents" @click="carNav(-1)">‹</button>
+        <div ref="car" class="carousel" @pointerenter="carPause(2500)" @pointermove="carPause(2000)"
+             @touchstart="carPause(3500)">
+          <div class="ctrack">
+            <div v-for="(e, i) in loop" :key="i" class="lcard"
+                 :class="{ sel: e.slug === list.selectedSlug }" role="button" tabindex="0"
+                 @click="list.selectList(e)" @keydown.enter="list.selectList(e)">
+              <img v-if="e.cover" :src="e.cover" alt="" loading="lazy">
+              <div class="lgrad"></div>
+              <div class="linfo">
+                <div class="lt">{{ e.title }}</div>
+                <div class="lc">{{ e.count }} films</div>
+              </div>
             </div>
           </div>
         </div>
+        <button class="cnav next" type="button" aria-label="Classements suivants" @click="carNav(1)">›</button>
       </div>
       <div v-if="list.status && list.status.type !== 'ok'" class="statusWrap">
         <span class="statusChip" :class="list.status.type">
@@ -125,6 +155,18 @@ function setTargetCustom(e: Event) {
       </div>
 
       <div class="field">
+        <label>Chrono par tour</label>
+        <div class="seg">
+          <div class="s" :class="{ on: settings.timer === 0 }" @click="settings.timer = 0">Sans chrono</div>
+          <div class="s" :class="{ on: settings.timer > 0 }" @click="timerOn">Chrono</div>
+        </div>
+        <div v-if="settings.timer > 0" class="timerRow">
+          <input type="range" min="3" max="30" step="1" :value="settings.timer" @input="setTimer">
+          <span class="timerVal">{{ settings.timer }} s</span>
+        </div>
+      </div>
+
+      <div class="field">
         <label>Qui devine en premier ?</label>
         <div class="seg">
           <div class="s" :class="{ on: settings.start === 'alt' }" @click="settings.start = 'alt'">Alterné</div>
@@ -133,8 +175,8 @@ function setTargetCustom(e: Event) {
       </div>
     </div>
 
-    <div class="btnrow" style="margin-top:32px">
-      <button class="big" :disabled="!list.ready" @click="launch">Lancer la séance</button>
+    <div class="btnrow launchRow">
+      <button class="big xl" :disabled="!list.ready" @click="launch">Lancer la séance</button>
     </div>
   </section>
 </template>

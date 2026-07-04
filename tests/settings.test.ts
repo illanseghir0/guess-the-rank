@@ -15,6 +15,15 @@ describe("settings store", () => {
     expect(s.rounds).toBe(10);
     expect(s.target).toBe(1000);
     expect(s.start).toBe("alt");
+    expect(s.timer).toBe(0); // sans chrono par défaut
+  });
+
+  it("assainit le chrono (0 ou 3 à 30 secondes)", () => {
+    localStorage.setItem("gtrCfg", JSON.stringify({ timer: 99 }));
+    expect(useSettingsStore().timer).toBe(0);
+    setActivePinia(createPinia());
+    localStorage.setItem("gtrCfg", JSON.stringify({ timer: 15 }));
+    expect(useSettingsStore().timer).toBe(15);
   });
 
   it("persiste les changements dans localStorage", async () => {

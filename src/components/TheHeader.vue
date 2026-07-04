@@ -13,6 +13,9 @@ const profile = useProfileStore();
 const showNav = computed(() =>
   route.name !== "jeu" && (route.name !== "accueil" || profile.enabled));
 
+const initiale = computed(() =>
+  (profile.profile?.username ?? "?").charAt(0).toUpperCase());
+
 /* le titre ramène à l'accueil (sauf en pleine partie) */
 function homeClick() {
   if (route.name !== "jeu") game.goHome();
@@ -26,11 +29,14 @@ function homeClick() {
     </div>
     <div class="side">
       <template v-if="profile.enabled">
+        <button v-if="profile.profile && route.name === 'profil'" class="linkBtn"
+                @click="profile.signOut()">déconnexion</button>
         <span v-if="profile.profile" class="profileChip" role="button" tabindex="0"
               :title="`${profile.profile.games_won} victoires / ${profile.profile.games_played} séances`"
               @click="game.goProfile()" @keydown.enter="game.goProfile()">
+          <span class="pp">{{ initiale }}</span>
           <span class="u">{{ profile.profile.username }}</span>
-          · {{ profile.profile.games_won }} V
+          <span class="v">· {{ profile.profile.games_won }} V</span>
         </span>
         <button v-else class="linkBtn" @click="game.goProfile()">Connexion</button>
       </template>

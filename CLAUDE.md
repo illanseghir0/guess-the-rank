@@ -48,10 +48,13 @@ supabase/*.sql        schema, hardening (RPC + policies), seed_lists (généré)
 Le propriétaire refuse la « vibe IA » : pas de cartes vitrées arrondies, pas de dégradés
 animés sur le texte, pas de grilles de features. Le style est **éditorial cinéma**
 (Criterion/A24) : Bebas Neue pour les titres, Georgia italique pour les textes culturels,
-crème `--cream:#f2ead6`,
-filets fins, menu-sommaire, boutons « ticket » crantés, grain de pellicule. Copy en
-français, ton cinéphile (Séance, Entracte, Générique, Carte de membre, Le club).
-Respecter `prefers-reduced-motion` partout (constante `REDUCE`).
+filets fins, menu-sommaire, boutons et cartes « ticket » crantés, grain de pellicule.
+**Palette : monochrome crème/blanc** (`--cream:#f2ead6`, muted `#8b9aa7`) — les couleurs
+« Letterboxd » (vert `--p1`, bleu `--p2`, orange `--true`) ne sont PLUS décoratives :
+elles subsistent uniquement comme marqueurs fonctionnels PENDANT la partie (scoreboard,
+marqueurs de la ligne, verdict, états d'erreur). Accueil, séance, profil et générique
+de fin sont neutres. Copy en français, ton cinéphile (Séance, Entracte, Générique,
+Carte de membre, Le club, Admit One). Respecter `prefers-reduced-motion` (`REDUCE`).
 
 ## État actuel et chantier en cours
 

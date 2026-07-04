@@ -132,7 +132,7 @@ input[type=number]::placeholder{color:rgba(139,154,167,.4);font-size:30px;letter
 .finalScore .fname{font-family:var(--display);font-size:22px;letter-spacing:.08em;
   text-transform:uppercase;color:var(--muted)}
 .finalScore .fpts{font-family:var(--display);font-size:40px;line-height:1}
-.finalScore .f1 .fpts{color:var(--p1)} .finalScore .f2 .fpts{color:var(--p2)}
+.finalScore .fpts{color:var(--cream)}
 .finalScore .fvs{color:var(--muted);font-size:12px;letter-spacing:.2em}
 .stats{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:26px;text-align:left}
 .stat{border:1px solid var(--line);border-radius:6px;padding:16px 18px;background:var(--panel)}
@@ -146,13 +146,12 @@ input[type=number]::placeholder{color:rgba(139,154,167,.4);font-size:30px;letter
   padding:12px 4px;border-bottom:1px solid var(--line);font-size:14px}
 .rec-row:first-of-type{border-top:1px solid var(--line)}
 .rec-film{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.rec-film b{color:var(--true);font-family:var(--display);font-size:16px;letter-spacing:.05em;margin-right:6px}
+.rec-film b{color:var(--cream);font-family:var(--display);font-size:16px;letter-spacing:.05em;margin-right:6px}
 .rec-film .y{color:var(--muted)}
 .rec-chips{display:flex;gap:8px;flex-shrink:0}
 .chip{font-size:11px;font-weight:700;letter-spacing:.06em;padding:4px 11px;border-radius:3px;
   border:1px solid var(--line);color:var(--muted);white-space:nowrap}
-.chip.c1.win{background:rgba(0,224,84,.13);color:var(--p1);border-color:rgba(0,224,84,.45)}
-.chip.c2.win{background:rgba(64,188,244,.13);color:var(--p2);border-color:rgba(64,188,244,.45)}
+.chip.win{background:rgba(242,234,214,.12);color:var(--cream);border-color:rgba(242,234,214,.5)}
 
 /* ---- confetti ---- */
 .confetti{position:fixed;inset:0;pointer-events:none;z-index:60;overflow:hidden}
@@ -175,3 +174,12 @@ input[type=number]::placeholder{color:rgba(139,154,167,.4);font-size:30px;letter
   .rec-row{flex-direction:column;align-items:flex-start;gap:8px}
   .rec-film{white-space:normal}
 }
+
+/* ---- chrono de tour : amorce de pellicule ---- */
+.leader{width:60px;height:60px;border-radius:50%;margin:0 auto 14px;
+  border:1px solid rgba(242,234,214,.4);position:relative;
+  display:flex;align-items:center;justify-content:center}
+.leader::before{content:"";position:absolute;inset:4px;border-radius:50%;
+  border:1px solid rgba(242,234,214,.18)}
+.leader .n{font-family:var(--display);font-size:26px;color:var(--cream);position:relative;z-index:1}
+.leader.urgent{animation:pulse .9s ease infinite}

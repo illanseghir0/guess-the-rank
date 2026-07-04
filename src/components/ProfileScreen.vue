@@ -1,9 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
-import { useGameStore } from "../stores/game";
 import { useProfileStore } from "../stores/profile";
 
-const game = useGameStore();
 const profile = useProfileStore();
 
 /* ---- stats de la carte de membre ---- */
@@ -62,20 +60,24 @@ function changeEmail() {
     <template v-if="profile.profile">
       <div class="setHead">Carte de membre</div>
 
-      <div class="member">
-        <div class="mhead">
-          <div>
-            <span class="mlbl">Le club des cinéphiles</span>
-            <div class="uname">{{ profile.profile.username }}</div>
+      <div class="breakout">
+        <div class="member">
+          <div class="mhead">
+            <div class="ppBig">{{ profile.profile.username.charAt(0).toUpperCase() }}</div>
+            <div>
+              <div class="uname">{{ profile.profile.username }}</div>
+              <div v-if="since" class="since">membre depuis {{ since }}</div>
+            </div>
           </div>
-          <div v-if="since" class="since">membre depuis {{ since }}</div>
+          <div class="stub"><span>Admit One</span></div>
         </div>
+
         <div class="mstats">
           <div class="ms">
             <div class="n">{{ profile.profile.games_played }}</div>
             <div class="l">Séances</div>
           </div>
-          <div class="ms hi">
+          <div class="ms">
             <div class="n">{{ profile.profile.games_won }}</div>
             <div class="l">Victoires</div>
           </div>
@@ -90,13 +92,8 @@ function changeEmail() {
         </div>
       </div>
 
-      <div class="clubIntro" style="margin-top:26px;margin-bottom:0">
-        Tes statistiques s'écrivent à chaque générique de fin,<br>quand tu joues en Joueur 1.
-      </div>
-
-      <div class="btnrow" style="margin-top:28px">
-        <button class="big" @click="game.goSetup()">Nouvelle séance</button>
-        <button class="linkBtn" @click="profile.signOut()">déconnexion</button>
+      <div class="clubIntro" style="margin-top:30px;margin-bottom:0">
+        Tes statistiques s'écrivent à chaque générique de fin.
       </div>
     </template>
 
