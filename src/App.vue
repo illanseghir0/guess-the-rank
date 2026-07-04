@@ -24,6 +24,7 @@ watch(backdropSrc, () => { backdropOn.value = false; });
 onMounted(() => {
   profile.init();
   list.boot();
+  list.loadCatalog(); // précharge le catalogue (covers du carrousel)
 });
 </script>
 

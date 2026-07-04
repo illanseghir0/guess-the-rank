@@ -9,8 +9,11 @@ entrer les noms, lancer.
 
 ## Fonctionnalités
 
-- Chargement d'une liste Letterboxd par URL, sans backend de scraping
-  (proxys CORS publics avec fallback)
+- **Catalogue curaté de classements** (table Supabase `lists`, films en JSONB) :
+  l'utilisateur choisit dans un carrousel, aucune URL à saisir. Le catalogue
+  s'alimente avec `scripts/ingest_lists.py` (génère `supabase/seed_lists.sql`
+  à coller dans le SQL Editor). Sans DB, catalogue de secours embarqué chargé
+  via proxys CORS publics
 - Affiches portrait, année et réalisateur récupérés à la demande, film par film
 - Cache localStorage par liste (7 jours) ; la dernière liste jouée est restaurée au retour
 - Deux modes : nombre de manches (1 pt/manche) ou course aux points

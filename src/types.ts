@@ -20,6 +20,17 @@ export interface RoundResult {
   pts: number;    // points marqués (mode course aux points)
 }
 
+/** un classement du catalogue curaté (table `lists` côté Supabase) */
+export interface CatalogEntry {
+  slug: string;
+  url: string;
+  title: string;
+  cover: string | null;
+  count: number;
+  /** films depuis la DB ; null = à charger via proxys (catalogue de secours) */
+  films: Film[] | null;
+}
+
 export interface Profile {
   id: string;
   username: string;

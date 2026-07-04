@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import { useGameStore } from "../stores/game";
 import { useListStore } from "../stores/list";
 import { useProfileStore } from "../stores/profile";
@@ -10,9 +10,11 @@ const list = useListStore();
 const profile = useProfileStore();
 const settings = useSettingsStore();
 
-/* ---- 01 · le classement ---- */
-const url = ref(list.defaultUrl);
-watch(() => list.defaultUrl, (u) => { url.value = u; });
+/* ---- 01 · le classement : carrousel du catalogue ---- */
+onMounted(() => list.loadCatalog());
+/* contenu doublé pour un défilement en boucle sans couture */
+const loop = computed(() =>
+  list.catalog.length ? [...list.catalog, ...list.catalog] : []);
 
 /* ---- 02 · les joueurs ---- */
 const n1 = ref(game.names[0]);
@@ -40,14 +42,23 @@ function setTargetCustom(e: Event) {
 
     <div class="actLbl">01 · Le classement</div>
     <div class="field" style="margin-bottom:0">
-      <div class="urlrow">
-        <input v-model="url" type="text" spellcheck="false"
-               placeholder="https://letterboxd.com/…/list/…"
-               @keydown.enter="list.loadList(url)">
-        <button :disabled="list.loading" @click="list.loadList(url)">Charger</button>
+      <div class="srcnote" style="margin:0 0 16px">
+        Choisis le classement de la soirée — le rang à deviner est la position dans la liste.
       </div>
-      <div class="srcnote">Colle l'URL de n'importe quelle liste Letterboxd classée
-        (ex. <i>top-250-films-with-the-most-fans</i>) — le rang à deviner est la position dans la liste.</div>
+      <div class="carousel">
+        <div class="ctrack">
+          <div v-for="(e, i) in loop" :key="i" class="lcard"
+               :class="{ sel: e.slug === list.selectedSlug }" role="button" tabindex="0"
+               @click="list.selectList(e)" @keydown.enter="list.selectList(e)">
+            <img v-if="e.cover" :src="e.cover" alt="" loading="lazy">
+            <div class="lgrad"></div>
+            <div class="linfo">
+              <div class="lt">{{ e.title }}</div>
+              <div class="lc">{{ e.count }} films</div>
+            </div>
+          </div>
+        </div>
+      </div>
       <div class="statusWrap">
         <span v-if="list.status" class="statusChip" :class="list.status.type">
           <span class="dotc"></span><span>{{ list.status.msg }}</span>

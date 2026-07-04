@@ -4,8 +4,10 @@
 
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
-import type { Film } from "../types";
+import type { CatalogEntry, Film } from "../types";
 import { fetchHTML, normListUrl, parseFilmPage, parseListPage } from "../lib/letterboxd";
+import { FALLBACK_CATALOG } from "../lib/catalog";
+import { supabase } from "../lib/supabase";
 
 export type StatusType = "ok" | "err" | "info";
 
@@ -15,8 +17,9 @@ export const useListStore = defineStore("list", () => {
   const listKey = ref<string | null>(null); // URL normalisée -> clé de cache
   const status = ref<{ type: StatusType; msg: string } | null>(null);
   const loading = ref(false);
-  /** URL proposée dans le champ de saisie (dernière liste jouée, sinon le Top 500) */
-  const defaultUrl = ref("https://letterboxd.com/official/list/letterboxds-top-500-films/");
+  /** catalogue curaté (table `lists`, sinon catalogue de secours embarqué) */
+  const catalog = ref<CatalogEntry[]>([]);
+  const selectedSlug = ref<string | null>(null);
 
   const ready = computed(() => !!films.value?.length);
   const maxRank = computed(() =>
@@ -28,6 +31,8 @@ export const useListStore = defineStore("list", () => {
     films.value = list;
     listTitle.value = title || "Liste Letterboxd";
     listKey.value = key;
+    const m = key?.match(/\/list\/([^/]+)/);
+    if (m) selectedSlug.value = m[1];
   }
 
   function saveCache() {
@@ -80,7 +85,6 @@ export const useListStore = defineStore("list", () => {
       applyList(out, title, base);
       saveCache();
       localStorage.setItem("duelLast", base);
-      defaultUrl.value = base;
       setStatus("ok", `${title} · ${out.length} films`);
     } catch {
       setStatus("err", "Liste inaccessible (proxys indisponibles ou liste privée) — réessaie dans un instant");
@@ -104,17 +108,60 @@ export const useListStore = defineStore("list", () => {
   /* ---- boot : dernière liste jouée, sinon le Top 500 par défaut ---- */
   async function boot(): Promise<string | null> {
     const savedLast = localStorage.getItem("duelLast");
-    if (savedLast && loadFromCache(savedLast)) { defaultUrl.value = savedLast; return savedLast; }
+    if (savedLast && loadFromCache(savedLast)) return savedLast;
     try {
       const r = await fetch(import.meta.env.BASE_URL + "films.json");
       const d = r.ok ? await r.json() : null;
       if (d && Array.isArray(d) && d.length) {
         applyList(normFilms(d), "Letterboxd's Top 500 Films", null);
+        selectedSlug.value = "letterboxds-top-500-films";
         setStatus("ok", `Letterboxd's Top 500 Films · ${films.value!.length} films`);
         return null;
       }
     } catch { /* pas de films.json servi */ }
     return null;
+  }
+
+  /* ---- catalogue curaté : table `lists` côté Supabase, sinon secours ---- */
+  let catalogLoaded = false;
+  async function loadCatalog() {
+    if (catalogLoaded) return;
+    catalogLoaded = true;
+    if (supabase) {
+      try {
+        const { data, error } = await supabase
+          .from("lists")
+          .select("slug,url,title,cover_url,film_count,films")
+          .order("position");
+        if (!error && data?.length) {
+          catalog.value = data.map((r: any): CatalogEntry => ({
+            slug: r.slug, url: r.url, title: r.title,
+            cover: r.cover_url ?? null, count: r.film_count,
+            films: (r.films as any[]).map((f): Film => ({
+              rank: +f.rank, title: String(f.title), year: f.year ?? null,
+              slug: f.slug ?? null,
+              url: f.slug ? `https://letterboxd.com/film/${f.slug}/` : null,
+            })),
+          }));
+          return;
+        }
+      } catch { /* table absente : on retombe sur le secours */ }
+    }
+    catalog.value = FALLBACK_CATALOG;
+  }
+
+  /** sélection d'un classement du carrousel */
+  async function selectList(e: CatalogEntry) {
+    selectedSlug.value = e.slug;
+    if (loadFromCache(e.url)) return; // version locale enrichie d'affiches
+    if (e.films) {
+      applyList(e.films, e.title, e.url);
+      saveCache();
+      localStorage.setItem("duelLast", e.url);
+      setStatus("ok", `${e.title} · ${e.films.length} films`);
+    } else {
+      await loadList(e.url); // catalogue de secours : via proxys
+    }
   }
 
   /* ---- affiche, année, réalisateur : récupérés à la demande (page film) ---- */
@@ -140,7 +187,8 @@ export const useListStore = defineStore("list", () => {
   }
 
   return {
-    films, listTitle, listKey, status, loading, ready, maxRank, defaultUrl,
-    setStatus, loadList, boot, ensureMeta,
+    films, listTitle, listKey, status, loading, ready, maxRank,
+    catalog, selectedSlug,
+    setStatus, loadList, boot, ensureMeta, loadCatalog, selectList,
   };
 });
