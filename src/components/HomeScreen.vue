@@ -30,6 +30,7 @@ onMounted(() => { quote.value = QUOTES[(Math.random() * QUOTES.length) | 0]; });
   <section>
     <div class="tagline">Un film s'affiche — <b>qui devine son rang exact ?</b></div>
 
+    <div class="breakout">
     <nav class="menu">
       <div class="menuRow" role="button" tabindex="0"
            @click="game.goSetup()" @keydown.enter="game.goSetup()">
@@ -61,6 +62,7 @@ onMounted(() => { quote.value = QUOTES[(Math.random() * QUOTES.length) | 0]; });
         <p>La révélation. Le pari le plus proche l'emporte, et le générique de fin
           départage les cinéphiles.</p>
       </div>
+    </div>
     </div>
 
     <div class="strip"></div>
