@@ -80,12 +80,12 @@ export const useGameStore = defineStore("game", () => {
     reveal.value = null;
     scoreShown.value = [...score.value] as [number, number];
     // ordre de passage de la manche
-    order.value = settings.start === "fixed" ? [0, 1]
-      : settings.start === "random" ? (Math.random() < 0.5 ? [0, 1] : [1, 0])
+    order.value = settings.start === "random"
+      ? (Math.random() < 0.5 ? [0, 1] : [1, 0])
       : (round.value % 2 ? [0, 1] : [1, 0]); // alterné
     list.ensureMeta(current.value);
-    // entracte avant le 1er joueur si l'ordre varie (sinon on sait que c'est J1)
-    handoffOpen.value = settings.start !== "fixed";
+    // entracte : l'ordre varie à chaque manche, on annonce toujours qui commence
+    handoffOpen.value = true;
   }
 
   function closeHandoff() { handoffOpen.value = false; }

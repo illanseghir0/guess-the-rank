@@ -19,7 +19,7 @@ body{
   padding:34px 18px 56px; overflow-x:hidden;
 }
 a{color:var(--p2);text-decoration:none} a:hover{text-decoration:underline}
-.wrap{width:100%; max-width:1200px; position:relative; z-index:1}
+.wrap{width:100%; max-width:min(1560px, 94vw); position:relative; z-index:1}
 
 /* ---- backdrop : l'affiche floutée en pleine page ---- */
 #backdrop{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none}
@@ -114,6 +114,7 @@ button.big{font-size:13px;padding:17px 40px;
   border:none;border-bottom:2px solid var(--line);border-radius:0;
   padding:8px 2px 10px;font-size:17px;font-family:var(--body);transition:border-color .2s}
 .field input[type=text]:focus,.field input[type=password]:focus{outline:none;border-bottom-color:var(--text)}
+.field input::placeholder{color:rgba(139,154,167,.45)}
 #n1:focus{border-bottom-color:var(--p1)} #n2:focus{border-bottom-color:var(--p2)}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:26px}
 
@@ -131,6 +132,8 @@ button.big{font-size:13px;padding:17px 40px;
   letter-spacing:.08em;padding:7px 4px;border-radius:0;-moz-appearance:textfield;appearance:textfield}
 .rounds input[type=number]::-webkit-outer-spin-button,.rounds input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
 .rounds input[type=number]:focus{outline:none;border-bottom-color:var(--text)}
+.rounds input[type=number]::placeholder{color:rgba(139,154,167,.45);font-size:13px;
+  font-family:var(--body);letter-spacing:.14em;text-transform:uppercase}
 .modeNote{color:var(--muted);font-size:12px;margin-top:10px;line-height:1.6}
 
 .srcnote{color:var(--muted);font-size:12px;margin-top:8px;line-height:1.5}
@@ -176,9 +179,9 @@ button.big{font-size:13px;padding:17px 40px;
 
 /* ---- menu-sommaire de l'accueil (façon programme de cinéma) ---- */
 .menu{margin:40px 0 6px;border-top:1px solid var(--line)}
-.menuRow{display:flex;align-items:baseline;padding:26px 10px;
+.menuRow{display:flex;align-items:baseline;padding:30px 10px;
   border-bottom:1px solid var(--line);cursor:pointer;user-select:none}
-.menuRow .lbl{font-family:var(--display);font-size:clamp(30px,5vw,54px);letter-spacing:.05em;
+.menuRow .lbl{font-family:var(--display);font-size:clamp(32px,5vw,64px);letter-spacing:.05em;
   text-transform:uppercase;line-height:1;color:var(--text);
   transition:transform .3s cubic-bezier(.2,.7,.2,1),color .2s ease}
 .menuRow:hover .lbl,.menuRow:focus-visible .lbl{transform:translateX(14px);color:var(--cream)}
@@ -256,3 +259,7 @@ button.big{font-size:13px;padding:17px 40px;
 /* reduced motion : le marquee est coupé par la règle globale -> défilement manuel */
 @media (prefers-reduced-motion:reduce){.carousel{overflow-x:auto}}
 @media (max-width:560px){.lcard{width:250px;margin-right:14px}}
+
+/* ---- règles centrées (écran La séance) ---- */
+.rulesWrap{max-width:680px;margin:0 auto;text-align:center}
+.rulesWrap .seg,.rulesWrap .rounds{justify-content:center}

@@ -6,7 +6,7 @@ import { defineStore } from "pinia";
 import { computed, ref, watch } from "vue";
 
 export type GameMode = "rounds" | "points";
-export type StartMode = "alt" | "random" | "fixed";
+export type StartMode = "alt" | "random";
 
 export const useSettingsStore = defineStore("settings", () => {
   const saved = (() => {
@@ -17,7 +17,7 @@ export const useSettingsStore = defineStore("settings", () => {
   const mode = ref<GameMode>(saved.mode === "points" ? "points" : "rounds");
   const rounds = ref<number>(Number.isInteger(saved.rounds) && saved.rounds >= 1 ? saved.rounds : 10);
   const target = ref<number>(Number.isInteger(saved.target) && saved.target >= 50 ? saved.target : 1000);
-  const start = ref<StartMode>(["alt", "random", "fixed"].includes(saved.start) ? saved.start : "alt");
+  const start = ref<StartMode>(saved.start === "random" ? "random" : "alt");
 
   watch([mode, rounds, target, start], () => {
     localStorage.setItem("gtrCfg", JSON.stringify({

@@ -10,22 +10,39 @@ const list = useListStore();
 const profile = useProfileStore();
 const settings = useSettingsStore();
 
-/* ---- 01 · le classement : carrousel du catalogue ---- */
+/* ---- le classement : carrousel du catalogue ---- */
 onMounted(() => list.loadCatalog());
 /* contenu doublé pour un défilement en boucle sans couture */
 const loop = computed(() =>
   list.catalog.length ? [...list.catalog, ...list.catalog] : []);
 
-/* ---- 02 · les joueurs ---- */
-const n1 = ref(game.names[0]);
-const n2 = ref(game.names[1]);
+/* ---- joueurs : pas de noms préremplis, validation au lancement ---- */
+const DEFAULTS = ["Joueur 1", "Joueur 2"];
+const n1 = ref(DEFAULTS.includes(game.names[0]) ? "" : game.names[0]);
+const n2 = ref(DEFAULTS.includes(game.names[1]) ? "" : game.names[1]);
+const nameErr = ref("");
+watch([n1, n2], () => { nameErr.value = ""; });
+/* le profil connecté joue en Joueur 1 */
 watch(() => profile.username, (u) => {
-  if (u && (n1.value === "Joueur 1" || n1.value === "")) n1.value = u;
+  if (u && n1.value === "") n1.value = u;
 }, { immediate: true });
 
-/* ---- 03 · les règles ---- */
+function launch() {
+  if (!n1.value.trim() || !n2.value.trim()) {
+    nameErr.value = "Veuillez rentrer des noms de joueur";
+    return;
+  }
+  game.start(n1.value, n2.value);
+}
+
+/* ---- règles ---- */
 const ROUND_PRESETS = [5, 10, 15, 20];
 const TARGET_PRESETS = [500, 1000, 2000];
+const roundsCustom = computed(() =>
+  ROUND_PRESETS.includes(settings.rounds) ? "" : String(settings.rounds));
+const targetCustom = computed(() =>
+  TARGET_PRESETS.includes(settings.target) ? "" : String(settings.target));
+
 function setRoundsCustom(e: Event) {
   const v = parseInt((e.target as HTMLInputElement).value, 10);
   if (v >= 1 && v <= 99) settings.rounds = v;
@@ -40,11 +57,8 @@ function setTargetCustom(e: Event) {
   <section>
     <div class="setHead">La séance</div>
 
-    <div class="actLbl">01 · Le classement</div>
+    <div class="actLbl">Choisis le classement</div>
     <div class="field" style="margin-bottom:0">
-      <div class="srcnote" style="margin:0 0 16px">
-        Choisis le classement de la soirée — le rang à deviner est la position dans la liste.
-      </div>
       <div class="carousel">
         <div class="ctrack">
           <div v-for="(e, i) in loop" :key="i" class="lcard"
@@ -59,66 +73,68 @@ function setTargetCustom(e: Event) {
           </div>
         </div>
       </div>
-      <div class="statusWrap">
-        <span v-if="list.status" class="statusChip" :class="list.status.type">
+      <div v-if="list.status && list.status.type !== 'ok'" class="statusWrap">
+        <span class="statusChip" :class="list.status.type">
           <span class="dotc"></span><span>{{ list.status.msg }}</span>
         </span>
       </div>
     </div>
 
-    <div class="actLbl">02 · Les joueurs</div>
+    <div class="actLbl">Joueurs</div>
     <div class="row2">
       <div class="field" style="margin-bottom:0">
         <label>Joueur 1</label>
-        <input id="n1" v-model="n1" type="text" maxlength="18">
+        <input id="n1" v-model="n1" type="text" maxlength="18" placeholder="entre un nom">
       </div>
       <div class="field" style="margin-bottom:0">
         <label>Joueur 2</label>
-        <input id="n2" v-model="n2" type="text" maxlength="18">
+        <input id="n2" v-model="n2" type="text" maxlength="18" placeholder="entre un nom">
       </div>
     </div>
+    <div v-if="nameErr" class="formErr" style="text-align:center">{{ nameErr }}</div>
 
-    <div class="actLbl">03 · Les règles</div>
-    <div class="field">
-      <label>Mode de jeu</label>
-      <div class="seg">
-        <div class="s" :class="{ on: settings.mode === 'rounds' }" @click="settings.mode = 'rounds'">Nombre de manches</div>
-        <div class="s" :class="{ on: settings.mode === 'points' }" @click="settings.mode = 'points'">Course aux points</div>
+    <div class="actLbl">Règles</div>
+    <div class="rulesWrap">
+      <div class="field">
+        <label>Mode de jeu</label>
+        <div class="seg">
+          <div class="s" :class="{ on: settings.mode === 'rounds' }" @click="settings.mode = 'rounds'">Nombre de manches</div>
+          <div class="s" :class="{ on: settings.mode === 'points' }" @click="settings.mode = 'points'">Course aux points</div>
+        </div>
+        <div class="modeNote">{{ settings.modeNote }}</div>
       </div>
-      <div class="modeNote">{{ settings.modeNote }}</div>
-    </div>
 
-    <div v-if="settings.mode === 'rounds'" class="field">
-      <label>Manches</label>
-      <div class="rounds">
-        <div v-for="r in ROUND_PRESETS" :key="r" class="r"
-             :class="{ on: settings.rounds === r }" @click="settings.rounds = r">{{ r }}</div>
-        <input type="number" min="1" max="99" inputmode="numeric"
-               title="Nombre personnalisé" :value="settings.rounds" @input="setRoundsCustom">
+      <div v-if="settings.mode === 'rounds'" class="field">
+        <label>Manches</label>
+        <div class="rounds">
+          <div v-for="r in ROUND_PRESETS" :key="r" class="r"
+               :class="{ on: settings.rounds === r }" @click="settings.rounds = r">{{ r }}</div>
+          <input type="number" min="1" max="99" inputmode="numeric" placeholder="custom"
+                 title="Nombre personnalisé" :value="roundsCustom" @input="setRoundsCustom">
+        </div>
       </div>
-    </div>
 
-    <div v-else class="field">
-      <label>Objectif de points</label>
-      <div class="rounds">
-        <div v-for="t in TARGET_PRESETS" :key="t" class="r"
-             :class="{ on: settings.target === t }" @click="settings.target = t">{{ t }}</div>
-        <input type="number" min="50" max="99999" inputmode="numeric"
-               title="Objectif personnalisé" :value="settings.target" @input="setTargetCustom">
+      <div v-else class="field">
+        <label>Objectif de points</label>
+        <div class="rounds">
+          <div v-for="t in TARGET_PRESETS" :key="t" class="r"
+               :class="{ on: settings.target === t }" @click="settings.target = t">{{ t }}</div>
+          <input type="number" min="50" max="99999" inputmode="numeric" placeholder="custom"
+                 title="Objectif personnalisé" :value="targetCustom" @input="setTargetCustom">
+        </div>
       </div>
-    </div>
 
-    <div class="field">
-      <label>Qui devine en premier ?</label>
-      <div class="seg">
-        <div class="s" :class="{ on: settings.start === 'alt' }" @click="settings.start = 'alt'">Alterné</div>
-        <div class="s" :class="{ on: settings.start === 'random' }" @click="settings.start = 'random'">Aléatoire</div>
-        <div class="s" :class="{ on: settings.start === 'fixed' }" @click="settings.start = 'fixed'">Toujours J1</div>
+      <div class="field">
+        <label>Qui devine en premier ?</label>
+        <div class="seg">
+          <div class="s" :class="{ on: settings.start === 'alt' }" @click="settings.start = 'alt'">Alterné</div>
+          <div class="s" :class="{ on: settings.start === 'random' }" @click="settings.start = 'random'">Aléatoire</div>
+        </div>
       </div>
     </div>
 
     <div class="btnrow" style="margin-top:32px">
-      <button class="big" :disabled="!list.ready" @click="game.start(n1, n2)">Lancer la séance</button>
+      <button class="big" :disabled="!list.ready" @click="launch">Lancer la séance</button>
     </div>
   </section>
 </template>
