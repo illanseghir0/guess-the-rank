@@ -4,11 +4,17 @@
 
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
-import type { CatalogEntry, Film } from "../types";
-import { fetchHTML, normListUrl, parseFilmPage, parseListPage } from "../lib/letterboxd";
+import type { CatalogEntry, DbFilmJson, DbListFull, DbListLight, Film } from "../types";
+import { fetchHTML, normListUrl, parseFilmPage } from "../lib/letterboxd";
+import { scrapeListPages } from "../lib/legacyScrape";
 import { FALLBACK_CATALOG } from "../lib/catalog";
 import { supabase } from "../lib/supabase";
 import { reportError } from "../lib/telemetry";
+
+/** fraîcheur du cache local d'une liste : les classements officiels
+    Letterboxd bougent ~chaque semaine et l'ingestion tourne le lundi —
+    24 h de cache = jamais plus d'un jour de retard sur la DB */
+const CACHE_TTL = 24 * 3600e3;
 
 export type StatusType = "ok" | "err" | "info";
 
@@ -36,18 +42,40 @@ export const useListStore = defineStore("list", () => {
     if (m) selectedSlug.value = m[1];
   }
 
+  /** retire les caches de liste périmés ou corrompus (sinon chaque liste
+      jouée laisse ~50-100 Ko pour toujours, jusqu'au quota) */
+  function purgeExpiredCaches() {
+    try {
+      for (let i = localStorage.length - 1; i >= 0; i--) {
+        const k = localStorage.key(i);
+        if (!k?.startsWith("duelList:")) continue;
+        try {
+          const c = JSON.parse(localStorage.getItem(k) || "null");
+          if (!c || typeof c.t !== "number" || Date.now() - c.t >= CACHE_TTL) {
+            localStorage.removeItem(k);
+          }
+        } catch { localStorage.removeItem(k); }
+      }
+    } catch { /* localStorage indisponible */ }
+  }
+
   function saveCache() {
     if (!listKey.value) return;
+    const payload = JSON.stringify({ t: Date.now(), title: listTitle.value, films: films.value });
     try {
-      localStorage.setItem("duelList:" + listKey.value,
-        JSON.stringify({ t: Date.now(), title: listTitle.value, films: films.value }));
-    } catch { /* stockage plein : tant pis */ }
+      localStorage.setItem("duelList:" + listKey.value, payload);
+    } catch {
+      // quota atteint : on fait de la place et on retente une fois
+      purgeExpiredCaches();
+      try { localStorage.setItem("duelList:" + listKey.value, payload); }
+      catch { /* toujours plein : tant pis */ }
+    }
   }
 
   function loadFromCache(base: string): boolean {
     try {
       const c = JSON.parse(localStorage.getItem("duelList:" + base) || "null");
-      if (c && Date.now() - c.t < 7 * 864e5 && Array.isArray(c.films) && c.films.length) {
+      if (c && Date.now() - c.t < CACHE_TTL && Array.isArray(c.films) && c.films.length) {
         applyList(c.films, c.title, base);
         localStorage.setItem("duelLast", base);
         setStatus("ok", `${c.title} · ${c.films.length} films`);
@@ -57,36 +85,21 @@ export const useListStore = defineStore("list", () => {
     return false;
   }
 
+  /** LEGACY : aspiration via proxys (voir lib/legacyScrape) — secours
+      uniquement, quand ni le cache ni la DB n'ont la liste */
   async function loadList(url: string) {
     const base = normListUrl(url);
     if (!base) { setStatus("err", "URL invalide — attendu : letterboxd.com/…/list/…"); return; }
-    if (loadFromCache(base)) return; // liste déjà récupérée il y a moins de 7 jours
+    if (loadFromCache(base)) return;
 
     loading.value = true;
     try {
-      let page = 1, out: Film[] = [], title: string | null = null, totalPages: number | null = null;
-      const seen = new Set<string>();
-      while (page <= 20) {
-        setStatus("info", `Récupération — page ${page}${totalPages ? ` / ${totalPages}` : ""}…`);
-        const html = await fetchHTML(page === 1 ? base : `${base}page/${page}/`);
-        const parsed = parseListPage(html, out.length);
-        if (page === 1) { title = parsed.title; totalPages = parsed.totalPages; }
-        if (!parsed.entries.length) break;
-        for (const f of parsed.entries) {
-          if (f.slug && seen.has(f.slug)) continue;
-          if (f.slug) seen.add(f.slug);
-          out.push(f);
-        }
-        if (totalPages && page >= totalPages) break;
-        page++;
-        await new Promise((r) => setTimeout(r, 250)); // politesse
-      }
-      if (!out.length) throw new Error("liste vide");
-      out.sort((a, b) => a.rank - b.rank);
-      applyList(out, title, base);
+      const scraped = await scrapeListPages(base, (page, totalPages) =>
+        setStatus("info", `Récupération — page ${page}${totalPages ? ` / ${totalPages}` : ""}…`));
+      applyList(scraped.films, scraped.title, base);
       saveCache();
       localStorage.setItem("duelLast", base);
-      setStatus("ok", `${title} · ${out.length} films`);
+      setStatus("ok", `${scraped.title} · ${scraped.films.length} films`);
     } catch {
       setStatus("err", "Liste inaccessible (proxys indisponibles ou liste privée) — réessaie dans un instant");
     } finally {
@@ -110,7 +123,7 @@ export const useListStore = defineStore("list", () => {
   /** mapping d'un film JSONB de la table `lists` (enrichi à l'ingestion) :
       si affiche + réalisateur sont présents, aucun proxy pendant la partie ;
       clés absentes (anciennes données) -> chemin paresseux conservé */
-  function mapDbFilm(f: any): Film {
+  function mapDbFilm(f: DbFilmJson): Film {
     return {
       rank: +f.rank, title: String(f.title), year: f.year ?? null,
       slug: f.slug ?? null,
@@ -128,8 +141,9 @@ export const useListStore = defineStore("list", () => {
       const { data, error } = await supabase
         .from("lists").select("url,title,films").eq("slug", slug).maybeSingle();
       if (error) { reportError("list_films_db", error.message); return null; }
-      if (!data || !Array.isArray(data.films) || !data.films.length) return null;
-      return { url: data.url, title: data.title, films: (data.films as any[]).map(mapDbFilm) };
+      const row = data as DbListFull | null;
+      if (!row || !Array.isArray(row.films) || !row.films.length) return null;
+      return { url: row.url, title: row.title, films: row.films.map(mapDbFilm) };
     } catch (e) {
       reportError("list_films_db", e instanceof Error ? e.message : "inconnu");
       return null;
@@ -141,6 +155,7 @@ export const useListStore = defineStore("list", () => {
   /* ---- boot : dernière liste jouée, sinon le Top 500 par défaut
           (depuis la DB — enrichi et mis en cache — sinon films.json) ---- */
   async function boot(): Promise<string | null> {
+    purgeExpiredCaches();
     const savedLast = localStorage.getItem("duelLast");
     if (savedLast && loadFromCache(savedLast)) return savedLast;
     const def = await fetchDbList(DEFAULT_SLUG);
@@ -175,7 +190,7 @@ export const useListStore = defineStore("list", () => {
           .select("slug,url,title,cover_url,film_count")
           .order("position");
         if (!error && data?.length) {
-          catalog.value = data.map((r: any): CatalogEntry => ({
+          catalog.value = (data as DbListLight[]).map((r): CatalogEntry => ({
             slug: r.slug, url: r.url, title: r.title,
             cover: r.cover_url ?? null, count: r.film_count,
           }));

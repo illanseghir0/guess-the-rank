@@ -11,7 +11,7 @@ import { computed, ref } from "vue";
 import { supabase } from "../lib/supabase";
 import { reportError } from "../lib/telemetry";
 import { useProfileStore } from "./profile";
-import type { Challenge, ChallengeRow } from "../types";
+import type { Challenge, ChallengeRow, DbScoreRow } from "../types";
 
 /** issue de l'envoi du score en fin de défi */
 export type SubmitState = "none" | "sent" | "anon" | "already" | "partial" | "error";
@@ -66,7 +66,7 @@ export const useCompetStore = defineStore("compet", () => {
       .order("played_at", { ascending: true })
       .limit(100);
     if (error) { reportError("compet_board", error.message); return; }
-    board.value = (data ?? []).map((r: any): ChallengeRow => ({
+    board.value = ((data ?? []) as unknown as DbScoreRow[]).map((r): ChallengeRow => ({
       user_id: r.user_id, score: r.score, best_gap: r.best_gap,
       played_at: r.played_at,
       username: r.profiles?.username ?? "anonyme",

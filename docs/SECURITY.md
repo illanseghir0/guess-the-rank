@@ -51,6 +51,10 @@ client, pas de backend applicatif à compromettre.
   Letterboxd requêtées (données publiques, aucun secret ne transite). Uniquement un
   chemin de secours désormais. Les remplacer par une Edge Function dédiée supprimerait
   cette dépendance externe.
+- **Clé service_role dans les secrets GitHub Actions** (workflow `refresh-lists`,
+  hebdomadaire) : elle contourne la RLS pour upserter la table `lists`. Elle ne doit
+  JAMAIS apparaître côté client ni dans un log ; le workflow tourne avec
+  `permissions: contents: read` et ne l'expose qu'à `scripts/ingest_lists.py`.
 - **Actions CI épinglées par tag** (`@v4`) et non par SHA : une compromission d'une
   action populaire reste théoriquement possible. Épingler par SHA si le projet grossit.
 - **error_events** : insertion ouverte à l'anonyme (plafonnée à 10/session côté client

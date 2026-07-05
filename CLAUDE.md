@@ -22,8 +22,11 @@ src/router.ts         /, /nouvelle-seance (choix du mode), /seance, /profil, /je
 src/stores/game.ts    boucle de jeu ; kind "local" (duel) ou "compet" (solo) ; router.push
 src/stores/compet.ts  défi actif + classement + envoi du score (RPC submit_challenge_score)
 src/stores/list.ts    catalogue léger (table lists SANS le JSONB films) ; les films d'une
-                      liste sont fetchés par slug à la sélection ; cache localStorage 7j ;
-                      films.json = secours sans DB uniquement (pas de réalisateur)
+                      liste sont fetchés par slug à la sélection ; cache localStorage 24 h
+                      (purgé au boot) ; films.json = secours sans DB (pas de réalisateur)
+src/lib/playKit.ts    mécanique partagée des écrans de jeu (saisie, compteur de rang) ;
+                      + useTurnTimer.ts (chrono) et PosterZone.vue (affiche + tilt)
+src/lib/legacyScrape.ts scraping via proxys — SECOURS uniquement, à supprimer un jour
 src/stores/settings.ts réglages persistés (clé localStorage héritée : gtrCfg — ne pas renommer)
 src/stores/profile.ts auth OTP email + profil + stats via RPC record_game
 src/lib/letterboxd.ts fetch via proxys CORS + parsing (fallback seulement, voir Fragilités)
@@ -38,7 +41,7 @@ supabase/*.sql        schema, hardening (RPC + policies), seed_lists (généré)
   (rank/title/year/slug/poster/director). Aucun proxy CORS pendant une partie normale.
   Les proxys (allorigins → codetabs → corsproxy) ne restent que pour d'anciens caches.
   Le JSONB n'est **jamais téléchargé en masse** : catalogue léger au boot (~1 Ko), films
-  d'une seule liste par `eq.slug` à la sélection (puis cache localStorage 7 j). Le chrono
+  d'une seule liste par `eq.slug` à la sélection (puis cache localStorage 24 h). Le chrono
   de tour (`src/lib/useTurnTimer.ts`) est basé sur l'horloge réelle, pas sur des ticks
   — ne pas revenir à un décompte setInterval (contournable en gelant l'onglet).
 - **Le profil connecté = Joueur 1** des parties locales ; ses stats s'écrivent uniquement
@@ -87,7 +90,12 @@ Carte de membre, Le club, Admit One). Respecter `prefers-reduced-motion` (`REDUC
 ## Fragilités et pièges connus
 
 - **Supabase SMTP par défaut ≈ 2 emails/heure** — cause d'échecs silencieux d'envoi de code.
-- Les vieux tops évolutifs (July Report) se rafraîchissent en relançant l'ingestion (manuel).
+- Les listes se rafraîchissent **automatiquement chaque lundi** (workflow `refresh-lists` :
+  ingestion + upsert direct en DB avec la clé service_role en secret GitHub Actions ;
+  relançable à la main via `gh workflow run refresh-lists.yml`). Les listes officielles
+  Letterboxd bougent ~chaque semaine ; le cache client de 24 h fait le reste.
+  ⚠️ Un défi compétitif joue sur la liste **courante** : elle peut bouger en cours de défi
+  (léger biais assumé ; snapshotter la liste dans `challenges` si ça devient un problème).
 - `deploy-pages` échoue parfois « try again later » : le workflow a un retry intégré ;
   si les deux tentatives échouent, `gh run rerun <id> --failed` suffit.
 - Vitest est **en v3** (Vitest 4 exige Vite 6 ; on est en Vite 5). Monter Vite 6 + Vitest 4

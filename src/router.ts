@@ -13,17 +13,17 @@ const router = createRouter({
     { path: "/nouvelle-seance", name: "modes", component: () => import("./components/ModeScreen.vue") },
     { path: "/seance", name: "seance", component: () => import("./components/SetupScreen.vue") },
     { path: "/profil", name: "profil", component: () => import("./components/ProfileScreen.vue") },
-    { path: "/jeu", name: "jeu", component: () => import("./components/PlayScreen.vue") },
-    { path: "/fin", name: "fin", component: () => import("./components/EndScreen.vue") },
+    { path: "/jeu", name: "jeu", meta: { requiresGame: true }, component: () => import("./components/PlayScreen.vue") },
+    { path: "/fin", name: "fin", meta: { requiresGame: true }, component: () => import("./components/EndScreen.vue") },
     { path: "/competitif", name: "competitif", component: () => import("./components/CompetScreen.vue") },
-    { path: "/competitif/jeu", name: "competJeu", component: () => import("./components/CompetPlayScreen.vue") },
-    { path: "/competitif/fin", name: "competFin", component: () => import("./components/CompetEndScreen.vue") },
+    { path: "/competitif/jeu", name: "competJeu", meta: { requiresGame: true }, component: () => import("./components/CompetPlayScreen.vue") },
+    { path: "/competitif/fin", name: "competFin", meta: { requiresGame: true }, component: () => import("./components/CompetEndScreen.vue") },
     { path: "/:pathMatch(.*)*", redirect: "/" },
   ],
 });
 
 router.beforeEach(async (to) => {
-  if (["jeu", "fin", "competJeu", "competFin"].includes(String(to.name))) {
+  if (to.meta.requiresGame) {
     // import paresseux : évite un cycle statique router <-> store
     const { useGameStore } = await import("./stores/game");
     if (useGameStore().round === 0) return { name: "accueil" };

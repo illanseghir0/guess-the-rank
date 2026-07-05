@@ -8,6 +8,12 @@ Usage (équipe du jeu, pour ajouter/mettre à jour des classements) :
     2. python3 scripts/ingest_lists.py
     3. Coller supabase/seed_lists.sql dans le SQL Editor du dashboard Supabase
 
+Ou en mode automatique (workflow refresh-lists, hebdomadaire) :
+    python3 scripts/ingest_lists.py --push
+    -> upsert direct dans la table `lists` via PostgREST, avec la clé
+       service_role (env SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY).
+       Les listes officielles Letterboxd sont refaites ~chaque semaine.
+
 Les films sont stockés en JSONB enrichi (rank/title/year/slug/poster/director) :
 l'affiche portrait et le réalisateur viennent de la page de chaque film
 (JSON-LD), si bien que le client n'a AUCUN proxy à appeler pendant les parties.
@@ -15,7 +21,9 @@ Un cache disque (.meta_cache.json) rend les ré-exécutions quasi instantanées.
 La cover du carrousel est l'og:image de la page de la liste.
 """
 
+import argparse
 import json
+import os
 import re
 import sys
 import threading
@@ -164,7 +172,28 @@ def sql_str(s):
     return "NULL" if s is None else "'" + s.replace("'", "''") + "'"
 
 
-def main():
+def push_db(entries: list) -> None:
+    """Upsert direct dans la table `lists` via PostgREST.
+    Nécessite la clé service_role (contourne la RLS — jamais côté client) :
+    en CI elle vit dans les secrets GitHub Actions du workflow refresh-lists."""
+    url = os.environ["SUPABASE_URL"].rstrip("/")
+    key = os.environ["SUPABASE_SERVICE_ROLE_KEY"]
+    rows = [{
+        "slug": e["slug"], "url": e["url"], "title": e["title"],
+        "cover_url": e["cover"], "film_count": len(e["films"]),
+        "films": e["films"], "position": pos,
+    } for pos, e in enumerate(entries)]
+    r = requests.post(
+        f"{url}/rest/v1/lists?on_conflict=slug",
+        headers={"apikey": key, "Authorization": f"Bearer {key}",
+                 "Content-Type": "application/json",
+                 "Prefer": "resolution=merge-duplicates"},
+        json=rows, timeout=120)
+    r.raise_for_status()
+    print(f"✓ {len(rows)} listes upsertées dans Supabase")
+
+
+def main(push: bool = False):
     entries = []
     print("1/2 Lecture des listes…")
     for url in LISTS:
@@ -206,9 +235,15 @@ on conflict (slug) do update set
     OUT.write_text("\n".join(parts), encoding="utf-8")
     print(f"\n✓ {OUT} ({OUT.stat().st_size // 1024} Ko)")
 
+    if push:
+        push_db(entries)
+
 
 if __name__ == "__main__":
+    ap = argparse.ArgumentParser(description="Ingestion des classements Letterboxd")
+    ap.add_argument("--push", action="store_true",
+                    help="upsert direct en DB (env SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY)")
     try:
-        main()
+        main(push=ap.parse_args().push)
     except KeyboardInterrupt:
         sys.exit(1)

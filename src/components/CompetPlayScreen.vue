@@ -3,10 +3,11 @@
    (kind === "compet"). Même scène que le duel local, sans entracte ni
    second joueur ; le chrono est imposé par le défi. */
 import { computed, nextTick, ref, watch } from "vue";
-import { REDUCE } from "../lib/env";
 import { useTurnTimer } from "../lib/useTurnTimer";
+import { filmSubtitle, useGuessInput, useRankCounter } from "../lib/playKit";
 import { useGameStore } from "../stores/game";
 import { useListStore } from "../stores/list";
+import PosterZone from "./PosterZone.vue";
 import RevealLine from "./RevealLine.vue";
 
 const game = useGameStore();
@@ -23,27 +24,10 @@ watch(() => game.scoreShown[0], (nv, ov) => {
 
 /* ---- fiche film ---- */
 const film = computed(() => game.current);
-const infoSub = computed(() => {
-  const f = film.value;
-  if (!f) return "";
-  return [f.year, f.director ? `de ${f.director}` : null].filter(Boolean).join(" · ");
-});
+const infoSub = computed(() => filmSubtitle(film.value));
 
 /* ---- saisie ---- */
-const gval = ref("");
-const shaking = ref(false);
-const guessInput = ref<HTMLInputElement | null>(null);
-
-function validate() {
-  const v = parseInt(gval.value, 10);
-  if (!game.submitGuess(v)) {
-    shaking.value = false;
-    requestAnimationFrame(() => { shaking.value = true; });
-    guessInput.value?.focus();
-    return;
-  }
-  gval.value = "";
-}
+const { gval, shaking, guessInput, validate, expireGuess } = useGuessInput();
 
 watch([() => game.reveal, () => game.round], async ([r]) => {
   if (!r) { await nextTick(); guessInput.value?.focus(); }
@@ -51,13 +35,7 @@ watch([() => game.reveal, () => game.round], async ([r]) => {
 
 /* ---- chrono imposé par le défi : horloge réelle, insensible au throttling
         (geler l'onglet ne donne plus de temps de réflexion) ---- */
-const { timeLeft, start: startTurnTimer, stop: stopTurnTimer } = useTurnTimer(() => {
-  // temps écoulé : on valide la saisie en cours, sinon pari au hasard
-  const v = parseInt(gval.value, 10);
-  const guess = v >= 1 && v <= list.maxRank ? v : 1 + ((Math.random() * list.maxRank) | 0);
-  gval.value = "";
-  game.submitGuess(guess);
-});
+const { timeLeft, start: startTurnTimer, stop: stopTurnTimer } = useTurnTimer(expireGuess);
 watch([() => game.reveal, () => game.round],
   ([r]) => { if (!r && game.round > 0) startTurnTimer(timerSec.value); else stopTurnTimer(); },
   { immediate: true });
@@ -65,19 +43,10 @@ watch([() => game.reveal, () => game.round],
 const stage = computed(() => game.reveal?.stage ?? -1);
 
 /* compteur animé du vrai rang (même mise en scène que le duel) */
-const displayRank = ref("# ?");
-watch(stage, (st) => {
-  const f = film.value;
-  if (!f) return;
-  if (st < 1) { displayRank.value = "# ?"; return; }
-  if (REDUCE || st > 1) { displayRank.value = "#" + f.rank; return; }
-  const to = f.rank, from = to <= list.maxRank / 2 ? list.maxRank : 1;
-  const t0 = performance.now(), dur = 950;
-  (function step(t: number) {
-    const p = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - p, 3);
-    displayRank.value = "#" + Math.round(from + (to - from) * e);
-    if (p < 1 && game.reveal) requestAnimationFrame(step);
-  })(t0);
+const displayRank = useRankCounter({
+  stage: () => stage.value,
+  film: () => film.value,
+  revealing: () => !!game.reveal,
 });
 
 const verdictText = computed(() => {
@@ -92,17 +61,6 @@ const nextBtn = ref<HTMLButtonElement | null>(null);
 watch(stage, async (st) => {
   if (st >= 2) { await nextTick(); nextBtn.value?.focus({ preventScroll: true }); }
 });
-
-/* ---- tilt 3D sur l'affiche (desktop uniquement) ---- */
-const zone = ref<HTMLElement | null>(null);
-const tiltOk = !REDUCE && matchMedia("(pointer:fine)").matches;
-function onTilt(e: PointerEvent) {
-  if (!tiltOk || !zone.value) return;
-  const r = zone.value.getBoundingClientRect();
-  const x = (e.clientX - r.left) / r.width - 0.5, y = (e.clientY - r.top) / r.height - 0.5;
-  zone.value.style.transform = `perspective(700px) rotateY(${x * 9}deg) rotateX(${-y * 9}deg)`;
-}
-function offTilt() { if (zone.value) zone.value.style.transform = ""; }
 </script>
 
 <template>
@@ -120,18 +78,7 @@ function offTilt() { if (zone.value) zone.value.style.transform = ""; }
     </div>
 
     <div v-if="film" class="stage" :class="{ revealing: !!game.reveal }">
-      <div ref="zone" class="posterZone" @pointermove="onTilt" @pointerleave="offTilt">
-        <img v-if="film.poster" class="glow" :src="film.poster" alt="">
-        <div class="poster">
-          <img v-if="film.poster" :src="film.poster" alt="affiche">
-          <div v-else-if="film.poster === undefined" class="ph"><div class="loader"></div></div>
-          <div v-else class="ph">
-            <div class="ico">🎞️</div>
-            <div class="t">{{ film.title }}</div>
-            <div v-if="film.year" class="y">{{ film.year }}</div>
-          </div>
-        </div>
-      </div>
+      <PosterZone :film="film" />
 
       <div v-if="!game.reveal" class="tcard">
         <div class="ft">{{ film.title }}</div>

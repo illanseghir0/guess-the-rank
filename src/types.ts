@@ -30,6 +30,29 @@ export interface CatalogEntry {
   count: number;
 }
 
+/* ---- lignes PostgREST : contrats nommés des selects du client.
+   (le jour où le CLI Supabase est installé et authentifié,
+   `supabase gen types typescript` peut les remplacer) ---- */
+
+/** un film du JSONB `lists.films` (enrichi à l'ingestion ; les clés
+    poster/director sont absentes des anciennes données) */
+export interface DbFilmJson {
+  rank: number; title: string; year?: number | null; slug?: string | null;
+  poster?: string | null; director?: string | null;
+}
+/** ligne du catalogue léger (sans le JSONB films) */
+export interface DbListLight {
+  slug: string; url: string; title: string;
+  cover_url: string | null; film_count: number;
+}
+/** une liste complète, fetchée par slug à la sélection */
+export interface DbListFull { url: string; title: string; films: DbFilmJson[] }
+/** ligne de challenge_scores avec le pseudo embarqué (FK -> profiles) */
+export interface DbScoreRow {
+  user_id: string; score: number; best_gap: number | null; played_at: string;
+  profiles: { username: string } | null;
+}
+
 /** défi compétitif fixé par l'équipe (table `challenges`) */
 export interface Challenge {
   id: number;
