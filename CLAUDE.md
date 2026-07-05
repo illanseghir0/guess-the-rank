@@ -13,7 +13,7 @@ achievements, multijoueur en ligne (Supabase Realtime).
 ## Stack et architecture
 
 Vue 3 (Composition API) + TypeScript strict + Pinia + vue-router + Vite. **pnpm** (pas npm).
-Backend : Supabase (auth OTP, Postgres, RLS). Tests : Vitest 2 + happy-dom 15. Déploiement :
+Backend : Supabase (auth OTP, Postgres, RLS). Tests : Vitest 3 + happy-dom 20. Déploiement :
 push sur `main` → GitHub Actions (typecheck + tests + build) → Pages sur movieguesser.fr.
 
 ```
@@ -84,7 +84,7 @@ Carte de membre, Le club, Admit One). Respecter `prefers-reduced-motion` (`REDUC
 - Les vieux tops évolutifs (July Report) se rafraîchissent en relançant l'ingestion (manuel).
 - `deploy-pages` échoue parfois « try again later » : le workflow a un retry intégré ;
   si les deux tentatives échouent, `gh run rerun <id> --failed` suffit.
-- Vitest est **épinglé en v2** (Vitest 4 exige Vite 6 ; on est en Vite 5). Monter les deux
+- Vitest est **en v3** (Vitest 4 exige Vite 6 ; on est en Vite 5). Monter Vite 6 + Vitest 4
   ensemble le jour venu. `tests/setup.ts` stubbe localStorage (celui de happy-dom/Node 25
   est incomplet). Les tests neutralisent les env Supabase (vite.config `test.env`).
 - Clés localStorage héritées : `gtrCfg`, `duelList:<url>`, `duelLast` — les renommer
