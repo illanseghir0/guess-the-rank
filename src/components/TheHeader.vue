@@ -25,8 +25,7 @@ function homeClick() {
 <template>
   <nav v-if="showNav" class="navbar">
     <div class="side">
-      <span v-if="route.name !== 'accueil'" class="brand" role="button" tabindex="0"
-            @click="game.goHome()" @keydown.enter="game.goHome()">MovieGuesser</span>
+      <button v-if="route.name !== 'accueil'" class="linkBtn" @click="game.goHome()">← Accueil</button>
     </div>
     <div class="side">
       <template v-if="profile.enabled">
@@ -44,7 +43,7 @@ function homeClick() {
     </div>
   </nav>
 
-  <header v-if="route.name === 'accueil'" class="bar">
+  <header class="bar">
     <div class="billing">A Letterboxd Game</div>
     <h1 @click="homeClick">MovieGuesser</h1>
   </header>

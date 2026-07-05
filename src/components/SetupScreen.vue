@@ -217,7 +217,10 @@ function setTimer(e: Event) {
         {{ showRules ? "Fermer" : "Personnaliser" }}
       </button>
     </div>
-    <div v-if="showRules" class="rulesWrap">
+    <div v-if="showRules" class="modal" @click.self="showRules = false">
+      <div class="panel rulesPanel">
+      <div class="setHead" style="margin-bottom:26px">Règles</div>
+      <div class="rulesWrap">
       <div class="field">
         <label>Mode de jeu</label>
         <div class="seg">
@@ -265,6 +268,11 @@ function setTimer(e: Event) {
           <div class="s" :class="{ on: settings.start === 'alt' }" @click="settings.start = 'alt'">Alterné</div>
           <div class="s" :class="{ on: settings.start === 'random' }" @click="settings.start = 'random'">Aléatoire</div>
         </div>
+      </div>
+      </div>
+      <div class="btnrow" style="margin-top:26px">
+        <button class="big" @click="showRules = false">Valider</button>
+      </div>
       </div>
     </div>
 

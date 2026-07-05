@@ -264,12 +264,15 @@ button.big{font-size:13px;padding:17px 40px;
 .carousel.grabbing{cursor:grabbing}
 .carousel img{-webkit-user-drag:none;user-select:none}
 .ctrack{display:flex;width:max-content;will-change:transform}
-.cnav{position:absolute;top:50%;transform:translateY(-50%);z-index:6;
-  width:42px;height:42px;border-radius:50%;padding:0;
-  background:rgba(10,13,16,.72);border:1px solid var(--line);color:var(--cream);
-  font-family:var(--display);font-size:22px;line-height:1;backdrop-filter:blur(4px)}
-.cnav:hover{border-color:rgba(255,255,255,.45);filter:none}
-.cnav.next{right:8px}
+/* rail pleine hauteur, volontairement plus large que la flèche :
+   aucun clic ne peut retomber sur une carte derrière */
+.cnav{position:absolute;top:0;bottom:0;right:0;z-index:10;width:82px;
+  border:none;border-radius:0;padding:0;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(90deg,transparent,rgba(10,13,16,.88) 62%);
+  color:var(--cream);font-family:var(--display);font-size:38px;line-height:1}
+.cnav:hover{filter:none;color:#fff;
+  background:linear-gradient(90deg,transparent,rgba(10,13,16,.97) 58%)}
 .lcard{position:relative;width:320px;aspect-ratio:16/9;margin-right:18px;border-radius:6px;
   overflow:hidden;cursor:pointer;flex-shrink:0;border:2px solid transparent;
   background:#151a1f;transition:border-color .2s ease,transform .25s ease}
@@ -313,11 +316,6 @@ button.big{font-size:13px;padding:17px 40px;
 .launchRow{margin:48px 0 90px}
 button.xl{font-size:16px;padding:22px 64px;letter-spacing:.22em}
 
-/* ---- marque dans la barre de navigation ---- */
-.brand{font-family:var(--display);font-size:21px;letter-spacing:.08em;text-transform:uppercase;
-  color:var(--cream);cursor:pointer;line-height:1;user-select:none}
-.brand:hover{text-shadow:0 0 24px rgba(242,234,214,.35)}
-
 /* ---- grille « voir tout » des classements ---- */
 .lgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
 .lgrid .lcard{width:auto;margin-right:0}
@@ -328,3 +326,5 @@ button.xl{font-size:16px;padding:22px 64px;letter-spacing:.22em}
   margin-bottom:6px}
 .ruleSummary .sum{font-family:var(--serif);font-style:italic;color:#b9ae97;font-size:15px}
 .rulesWrap{margin-top:22px}
+
+.modal .panel.rulesPanel{max-width:600px;max-height:88vh;overflow-y:auto}
