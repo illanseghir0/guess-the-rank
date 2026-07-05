@@ -1,6 +1,13 @@
 # Audit de sécurité — MovieGuesser
 
-Dernier audit : **2026-07-05**. À rejouer via le skill `security-audit` après quelques MEP.
+Dernier audit : **2026-07-06**. À rejouer via le skill `security-audit` après quelques MEP.
+
+Delta 2026-07-06 (après le mode compétitif + consolidations) : toutes les probes
+re-tiennent (profiles/lists/error_events + challenges/challenge_scores/RPC compétitive) ;
+`consolidation.sql` vérifié appliqué (colonne `profiles.last_game_at` présente) —
+record_game rate-limitée, FK challenges→lists posée. `pnpm audit --prod` : 0 vuln
+(les 4 résiduelles restent dev-only, Vite 5). Nouveau depuis le 05/07 : la clé
+service_role vit dans les secrets Actions (workflow refresh-lists, voir plus bas).
 
 ## Modèle de menace (rappel)
 
