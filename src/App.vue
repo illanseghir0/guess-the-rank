@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from "vue";
-import { useRoute } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import { useGameStore } from "./stores/game";
 import { useListStore } from "./stores/list";
 import { useProfileStore } from "./stores/profile";
 import { useFriendsStore } from "./stores/friends";
+import { useRoomStore } from "./stores/rooms";
 import TheHeader from "./components/TheHeader.vue";
 import TheFooter from "./components/TheFooter.vue";
 import HandoffOverlay from "./components/HandoffOverlay.vue";
@@ -26,12 +27,24 @@ onMounted(() => {
   list.loadCatalog(); // précharge le catalogue (covers du carrousel)
 });
 
-/* connecté = présent sur le canal "online" (état en ligne des amis) */
+/* connecté = présent sur le canal "online" (état en ligne des amis)
+   + à l'écoute des invitations de salon (badge + toast) */
 const friends = useFriendsStore();
+const rooms = useRoomStore();
 watch(() => profile.profile, (p) => {
-  if (p) { friends.startPresence(); friends.load(); }
-  else friends.stopPresence();
+  if (p) { friends.startPresence(); friends.load(); rooms.startInviteWatch(); }
+  else { friends.stopPresence(); rooms.stopInviteWatch(); }
 });
+
+/* toast d'invitation : rejoindre d'un clic, où qu'on soit sur le site */
+const router = useRouter();
+async function joinFromToast() {
+  const inv = rooms.toast;
+  rooms.toast = null;
+  if (!inv) return;
+  const e = await rooms.join(inv);
+  if (!e) router.push("/entre-amis");
+}
 </script>
 
 <template>
@@ -49,4 +62,11 @@ watch(() => profile.profile, (p) => {
   </div>
 
   <HandoffOverlay v-if="game.handoffOpen" />
+
+  <!-- invitation reçue en direct : ticket en bas d'écran -->
+  <div v-if="rooms.toast" class="inviteToast">
+    <span class="tx">🎟️ <b>{{ rooms.toast.from_username }}</b> t'invite à une séance</span>
+    <button class="ghost sm" @click="joinFromToast()">Rejoindre</button>
+    <button class="linkBtn" @click="rooms.decline(rooms.toast)">refuser</button>
+  </div>
 </template>

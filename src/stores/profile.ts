@@ -43,7 +43,15 @@ export const useProfileStore = defineStore("profile", () => {
     const uname = (typeof meta.username === "string" && meta.username) || fallback;
     const { data: created, error } = await supabase.from("profiles")
       .insert({ id: uid, username: uname }).select().single();
-    if (!error && created) profile.value = created as Profile;
+    if (!error && created) { profile.value = created as Profile; return; }
+    // pseudo pris entre-temps (unicité sans casse) : suffixe aléatoire,
+    // l'utilisateur pourra le changer plus tard
+    if (error && /duplicate|unique/i.test(error.message)) {
+      const alt = `${uname.slice(0, 15)}-${(1000 + Math.random() * 9000) | 0}`;
+      const { data: retry } = await supabase.from("profiles")
+        .insert({ id: uid, username: alt }).select().single();
+      if (retry) profile.value = retry as Profile;
+    }
   }
 
   /** envoie un code de connexion à usage unique par email — sa longueur
@@ -53,6 +61,13 @@ export const useProfileStore = defineStore("profile", () => {
     if (!supabase) return "Profils indisponibles sur cette version";
     if (uname && !/^[\w.-]{3,20}$/.test(uname)) {
       return "Pseudo : 3 à 20 caractères (lettres, chiffres, . _ -)";
+    }
+    // pseudo unique sans distinction de casse (l'UI affiche en majuscules) :
+    // on vérifie la disponibilité avant d'envoyer le code
+    if (uname) {
+      const { data } = await supabase.from("profiles")
+        .select("id").ilike("username", uname).maybeSingle();
+      if (data) return "Ce pseudo est déjà pris — choisis-en un autre";
     }
     busy.value = true;
     try {

@@ -11,6 +11,7 @@ const router = createRouter({
   routes: [
     { path: "/", name: "accueil", component: () => import("./components/HomeScreen.vue") },
     { path: "/nouvelle-seance", name: "modes", component: () => import("./components/ModeScreen.vue") },
+    { path: "/entre-amis", name: "amis", component: () => import("./components/FriendsLobbyScreen.vue") },
     { path: "/seance", name: "seance", component: () => import("./components/SetupScreen.vue") },
     { path: "/profil", name: "profil", component: () => import("./components/ProfileScreen.vue") },
     { path: "/jeu", name: "jeu", meta: { requiresGame: true }, component: () => import("./components/PlayScreen.vue") },

@@ -1,14 +1,26 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
 import { supabase } from "../lib/supabase";
+import router from "../router";
 import { useProfileStore } from "../stores/profile";
 import { useFriendsStore } from "../stores/friends";
-import type { Profile } from "../types";
+import { useRoomStore } from "../stores/rooms";
+import type { GameInvite, Profile } from "../types";
 
 const profile = useProfileStore();
 const friends = useFriendsStore();
+const rooms = useRoomStore();
 
-onMounted(() => { if (profile.profile) friends.load(); });
+onMounted(() => { if (profile.profile) { friends.load(); rooms.loadInvites(); } });
+
+/* rejoindre un salon depuis une invitation */
+const joinErr = ref("");
+async function joinRoom(inv: GameInvite) {
+  joinErr.value = "";
+  const e = await rooms.join(inv);
+  if (e) { joinErr.value = e; return; }
+  router.push("/entre-amis");
+}
 
 /* ---- stats de la carte de membre ---- */
 const winRate = computed(() => {
@@ -132,6 +144,22 @@ function fmtSince(iso: string | undefined) {
       <div class="clubIntro" style="margin-top:30px;margin-bottom:0">
         Tes statistiques s'écrivent à chaque générique de fin.
       </div>
+
+      <!-- ---- invitations à une séance ---- -->
+      <template v-if="rooms.invites.length">
+        <div class="actLbl">Invitations à une séance</div>
+        <div class="ladder">
+          <div v-for="inv in rooms.invites" :key="inv.room_id" class="lrow">
+            <span class="fdot on"></span>
+            <span class="who">{{ inv.from_username }} t'attend dans son salon</span>
+            <span class="frowBtns">
+              <button class="ghost sm" :disabled="rooms.busy" @click="joinRoom(inv)">Rejoindre</button>
+              <button class="linkBtn" :disabled="rooms.busy" @click="rooms.decline(inv)">refuser</button>
+            </span>
+          </div>
+        </div>
+        <div v-if="joinErr" class="formErr" style="text-align:center">{{ joinErr }}</div>
+      </template>
 
       <!-- ---- mes amis ---- -->
       <div class="actLbl">Mes amis</div>

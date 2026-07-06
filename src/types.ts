@@ -78,6 +78,44 @@ export interface DbFriendshipRow {
   addressee_profile: { username: string } | null;
 }
 
+/* ---- salons « entre amis » (tables rooms / game_invites) ---- */
+
+export type RoomStatus = "lobby" | "playing" | "closed";
+
+/** règles choisies par l'hôte (mêmes réglages que la séance locale) */
+export interface RoomConfig {
+  mode?: "rounds" | "points";
+  rounds?: number;
+  target?: number;
+  timer?: number;
+  list_slug?: string;
+}
+
+export interface Room {
+  id: string;
+  host: string;
+  guest: string | null;
+  status: RoomStatus;
+  config: RoomConfig;
+  created_at: string;
+}
+
+/** invitation reçue, enrichie du pseudo de l'hôte */
+export interface GameInvite {
+  room_id: string;
+  from_user: string;
+  from_username: string;
+  created_at: string;
+}
+
+/** ligne game_invites avec le profil de l'hôte embarqué */
+export interface DbInviteRow {
+  room_id: string;
+  from_user: string;
+  created_at: string;
+  from_profile: { username: string } | null;
+}
+
 /** défi compétitif fixé par l'équipe (table `challenges`) */
 export interface Challenge {
   id: number;

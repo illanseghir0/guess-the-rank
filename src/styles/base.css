@@ -385,6 +385,18 @@ button.xl{font-size:16px;padding:22px 64px;letter-spacing:.22em}
   .challCover{width:100%;aspect-ratio:16/9}
 }
 
+/* ---- toast d'invitation (ticket en bas d'écran) ---- */
+.inviteToast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);z-index:75;
+  display:flex;align-items:center;gap:16px;flex-wrap:wrap;justify-content:center;
+  background:var(--panel);border:1px solid rgba(255,255,255,.18);border-radius:6px;
+  padding:14px 22px;backdrop-filter:blur(10px);max-width:min(560px,92vw);
+  animation:fadeUp .3s ease both;
+  mask:radial-gradient(circle 9px at 0 50%,transparent 97%,#000),radial-gradient(circle 9px at 100% 50%,transparent 97%,#000);
+  -webkit-mask:radial-gradient(circle 9px at 0 50%,transparent 97%,#000),radial-gradient(circle 9px at 100% 50%,transparent 97%,#000);
+  mask-composite:intersect;-webkit-mask-composite:source-in}
+.inviteToast .tx{font-family:var(--serif);font-style:italic;color:#b9ae97;font-size:14px}
+.inviteToast .tx b{color:var(--cream);font-style:normal}
+
 /* ---- mes amis (Le club) ---- */
 .friendAdd{display:flex;gap:14px;justify-content:center;align-items:flex-end;flex-wrap:wrap;
   margin-bottom:10px}
